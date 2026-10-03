@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moo Alarm</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="panel">
+    <h1>🐄 Moo Alarm</h1>
+    <div id="clock" class="clock">--:--:--</div>
+ 
+    <label class="row">
+      Wake me at
+      <input id="alarm-time" type="time" value="07:00">
+    </label>
+ 
+    <div class="row">
+      <button id="arm-btn">Arm alarm</button>
+      <button id="test-btn" class="ghost">Test now</button>
+    </div>
+    <p id="status" class="status">Alarm is off.</p>
+  </main>
+ 
+  <!-- Ringing overlay -->
+  <div id="overlay" class="overlay hidden">
+    <div class="cow-big">🐄</div>
+    <div class="bubble">WAKE UP, IT'S THE FIRST OF THE MONTH!</div>
+ 
+    <!-- shown only when audio needs a tap (e.g. after a page refresh mid-alarm) -->
+    <button id="gate-btn" class="hidden">Tap to start</button>
+ 
+    <form id="quiz" class="quiz hidden" autocomplete="off">
+      <div id="progress" class="progress"></div>
+      <div id="question" class="question"></div>
+      <input id="answer" type="text" placeholder="Type your answer" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button type="submit">Submit</button>
+      <div id="feedback" class="feedback"></div>
+    </form>
+  </div>
+ 
+  <script src="app.js"></script>
+</body>
+</html>
+ 
