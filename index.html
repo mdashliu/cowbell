@@ -3,44 +3,99 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Moo Alarm</title>
+  <title>cowbell - productivity alarm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="panel">
-    <h1>🐄 Moo Alarm</h1>
-    <div id="clock" class="clock">--:--:--</div>
- 
-    <label class="row">
-      Wake me at
-      <input id="alarm-time" type="time" value="07:00">
-    </label>
- 
-    <div class="row">
-      <button id="arm-btn">Arm alarm</button>
-      <button id="test-btn" class="ghost">Test now</button>
+  <!-- Main window -->
+  <main class="window main-window">
+    <div class="titlebar">
+      <div class="titlebar-title"><span></span><h1>cowbell</h1></div>
+      <div class="titlebar-btns" aria-hidden="true">
+        <span class="tb-btn">_</span><span class="tb-btn">▢</span><span class="tb-btn">✕</span>
+      </div>
     </div>
-    <p id="status" class="status">Alarm is off.</p>
+
+    <!-- browser-style toolbar (decorative) -->
+    <div class="toolbar" aria-hidden="true">
+      <span class="tb-nav">◀</span><span class="tb-nav">▶</span><span class="tb-nav">⟳</span>
+      <span class="address-label">address</span>
+      <div class="address-box">cowbell://rise-n-grind</div>
+    </div>
+
+    <div class="content">
+      <p class="tagline">waking you up every day, not just the first of the month</p>
+
+      <div class="hud">
+        <span> <b id="points">0</b> pts</span>
+        <span> <b id="streak">0</b> day streak</span>
+      </div>
+
+      <div id="clock" class="clock">--:--:--</div>
+
+      <label class="row">
+        wake me up at
+        <input id="alarm-time" type="time" value="07:00">
+      </label>
+
+      <div class="row">
+        <button id="arm-btn" class="primary">arm alarm</button>
+        <button id="test-btn">test now</button>
+        <button id="shop-btn" aria-expanded="false" aria-controls="shop">shop</button>
+      </div>
+
+      <!-- Shop window: hidden until the Shop button is clicked -->
+      <section id="shop" class="window inner-window hidden">
+        <div class="titlebar small">
+          <div class="titlebar-title"><span>🛒</span><span>shop.exe</span></div>
+          <div class="titlebar-btns">
+            <button id="shop-close" class="tb-btn" aria-label="Close shop">✕</button>
+          </div>
+        </div>
+        <div class="content">
+          <div id="shop-cow" class="shop-cow sunken"></div>
+          <div id="shop-items" class="shop-items sunken"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="statusbar">
+      <span id="status" class="status-cell">Alarm is off.</span>
+      <span class="status-cell">cowbell v1.0</span>
+    </div>
   </main>
- 
-  <!-- Ringing overlay -->
+
+  <!-- Ringing overlay: a retro dialog window -->
   <div id="overlay" class="overlay hidden">
-    <div class="cow-big">🐄</div>
-    <div class="bubble">WAKE UP, IT'S THE FIRST OF THE MONTH!</div>
- 
-    <!-- shown only when audio needs a tap (e.g. after a page refresh mid-alarm) -->
-    <button id="gate-btn" class="hidden">Tap to start</button>
- 
-    <form id="quiz" class="quiz hidden" autocomplete="off">
-      <div id="progress" class="progress"></div>
-      <div id="question" class="question"></div>
-      <input id="answer" type="text" placeholder="Type your answer" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <button type="submit">Submit</button>
-      <div id="feedback" class="feedback"></div>
-    </form>
+    <div class="window dialog" role="alertdialog" aria-label="Wake up">
+      <div class="titlebar">
+        <div class="titlebar-title"><span>⚠️</span><span>wake_up.exe</span></div>
+        <div class="titlebar-btns" aria-hidden="true"><span class="tb-btn">✕</span></div>
+      </div>
+      <div class="content dialog-body">
+        <div id="alarm-cow" class="cow-big"></div>
+        <div class="bubble">WAKE UP, IT'S THE FIRST OF THE MONTH!</div>
+
+        <!-- shown only when audio needs a tap (e.g. after a page refresh mid-alarm) -->
+        <button id="gate-btn" class="primary hidden">Tap to start</button>
+
+        <form id="quiz" class="quiz hidden" autocomplete="off">
+          <div id="progress" class="progress"></div>
+          <div id="question" class="question"></div>
+          <input id="answer" type="text" placeholder="Type your answer" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button type="submit" class="primary">Submit</button>
+          <div id="feedback" class="feedback"></div>
+        </form>
+      </div>
+    </div>
   </div>
- 
+  <footer class="taskbar">
+    <span class="start-btn" style="color:#2c387c;"> mooooooo </span>
+    <span class="taskbar-credit">created by jenny wang &amp; maggie liu for calhacks' women's hack night!</span>
+  </footer>
   <script src="app.js"></script>
 </body>
 </html>
- 

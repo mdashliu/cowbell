@@ -1,0 +1,21 @@
+question,answer
+What is sin(0)?,0
+What is cos(0)?,1
+What is sin(pi/2)?,1
+What is cos(pi)?,-1
+What is tan(pi/4)?,1
+What is log base 10 of 100?,2
+What is ln(e)?,1
+What is the slope of the line tangent to y = x^2 at x = 3?,6
+What is the derivative of 5x - 7 at x = 2?,5
+What is the limit of (x^2 - 1)/(x - 1) as x approaches 1?,2
+What is the limit of sin(x)/x as x approaches 0?,1
+What is the value of the definite integral of 2x dx from x = 0 to x = 3?,9
+What is the value of the definite integral of cos(x) dx from x = 0 to x = pi/2?,1
+What is the degree of the polynomial f(x) = 4x^3 - 2x + 7?,3
+What is the value of e^0?,1
+What is log base 2 of 16?,4
+What is the value of the definite integral of 3x^2 dx from x = 0 to x = 2?,8
+What is the slope of the tangent line to y = x^3 at x = 2?,12
+What is the second derivative of x^3 at x = 1?,6
+"What is the period of sin(2x)? (In multiples of pi, e.g. enter 1 for 1*pi)",1

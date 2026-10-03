@@ -85,41 +85,27 @@ function ensureAudio() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-function playMoo() {
-  if (!audioCtx || audioCtx.state !== 'running') return;
-  const t = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const filter = audioCtx.createBiquadFilter();
-  const gain = audioCtx.createGain();
+const mooAudio = new Audio('moo.mp3'); // path is relative to index.html
+mooAudio.loop = true;
 
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(110, t);
-  osc.frequency.linearRampToValueAtTime(150, t + 0.35);
-  osc.frequency.linearRampToValueAtTime(85, t + 1.1);
-
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(500, t);
-  filter.frequency.linearRampToValueAtTime(900, t + 0.4);
-  filter.frequency.linearRampToValueAtTime(300, t + 1.1);
-
-  gain.gain.setValueAtTime(0, t);
-  gain.gain.linearRampToValueAtTime(0.6, t + 0.1);
-  gain.gain.linearRampToValueAtTime(0.5, t + 0.8);
-  gain.gain.linearRampToValueAtTime(0, t + 1.2);
-
-  osc.connect(filter).connect(gain).connect(audioCtx.destination);
-  osc.start(t);
-  osc.stop(t + 1.25);
-}
+mooAudio.addEventListener('error', () => console.error('moo.mp3 failed to load:', mooAudio.error));
 
 function startMooLoop() {
-  stopMooLoop();
-  playMoo();
-  mooTimer = setInterval(playMoo, 2000);
+  mooAudio.currentTime = 0;
+  mooAudio.play().catch((err) => console.error('moo play() rejected:', err));
 }
+
 function stopMooLoop() {
-  if (mooTimer) clearInterval(mooTimer);
-  mooTimer = null;
+  mooAudio.pause();
+  mooAudio.currentTime = 0;
+}
+
+function primeMoo() {
+  mooAudio.muted = true;
+  mooAudio.play()
+    .then(() => { mooAudio.pause(); mooAudio.currentTime = 0; })
+    .catch(() => {})
+    .finally(() => { mooAudio.muted = false; });
 }
 
 // ---------- keep screen awake while armed (best effort) ----------
@@ -138,11 +124,12 @@ document.addEventListener('visibilitychange', () => {
 
 // ---------- quiz ----------
 function nextQuestion() {
-  let pick;
-  do {
-    pick = questions[Math.floor(Math.random() * questions.length)];
-  } while (questions.length > 1 && pick === current);
-  current = pick;
+  const seen = answeredToday();
+  let pool = questions.filter((x) => !seen.has(x.q));
+  // Every question already answered today: allow repeats so the alarm can still be dismissed.
+  if (!pool.length) pool = questions;
+  if (pool.length > 1) pool = pool.filter((x) => x !== current);
+  current = pool[Math.floor(Math.random() * pool.length)];
   questionEl.textContent = current.q;
   answerInput.value = '';
   answerInput.focus();
@@ -166,7 +153,7 @@ quizForm.addEventListener('submit', (e) => {
 
   if (current.a.includes(given)) {
     quizProgress++;
-    onCorrect();
+    onCorrect(current);
     if (quizProgress >= REQUIRED_STREAK) {
       dismissAlarm();
       return;
@@ -219,17 +206,159 @@ function dismissAlarm() {
   onAlarmDismissed();
 }
 
-// ---------- hooks for the points/streak step ----------
-function onCorrect() {
-  // TODO: award points here
+// ---------- points + streak (separate storage key from alarm state) ----------
+const GAME_KEY = 'moo-game';
+const POINTS_PER_CORRECT = 10;
+const defaultGame = {
+  points: 0,
+  streak: 0,
+  lastWakeDate: null,
+  answeredDate: null, // day the `answered` list belongs to
+  answered: [],       // question texts answered correctly on that day
+  ownedItems: [],
+  equipped: [],       // owned items currently worn (max one per slot)
+};
+let game = loadGame();
+
+function loadGame() {
+  try {
+    return { ...defaultGame, ...JSON.parse(localStorage.getItem(GAME_KEY)) };
+  } catch {
+    return { ...defaultGame };
+  }
 }
+function saveGame() {
+  try { localStorage.setItem(GAME_KEY, JSON.stringify(game)); } catch {}
+}
+
+function yesterdayKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-CA');
+}
+
+// A streak is only alive if you woke up today or yesterday; otherwise it displays as 0.
+function currentStreak() {
+  const last = game.lastWakeDate;
+  return last === todayKey() || last === yesterdayKey() ? game.streak : 0;
+}
+
+function renderHud() {
+  $('points').textContent = game.points;
+  $('streak').textContent = currentStreak();
+  renderShop();
+}
+
+// Questions answered correctly today. Rolls the list over when the date changes.
+function answeredToday() {
+  if (game.answeredDate !== todayKey()) {
+    game.answeredDate = todayKey();
+    game.answered = [];
+  }
+  return new Set(game.answered);
+}
+
+function onCorrect(q) {
+  answeredToday(); // make sure the list belongs to today before adding
+  game.answered = [...game.answered, q.q];
+  game.points += POINTS_PER_CORRECT; // saved per answer, not at the end
+  saveGame();
+  renderHud();
+}
+
+// ---------- shop ----------
+const SHOP_ITEMS = [
+  { id: 'bell',   name: 'Bell',      emoji: '🔔', cost: 30, slot: 'neck' },
+  { id: 'flower', name: 'Flower',    emoji: '🌸', cost: 40, slot: 'head' },
+  { id: 'hat',    name: 'Top hat',   emoji: '🎩', cost: 50, slot: 'head' },
+  { id: 'shades', name: 'Shades',    emoji: '🕶️', cost: 60, slot: 'face' },
+];
+
+// Draws the cow plus every owned item as an absolutely positioned layer.
+// Offsets live in style.css (.item-<id>) so they're easy to tweak.
+function renderCow(el) {
+  const layers = SHOP_ITEMS
+    .filter((item) => game.equipped.includes(item.id))
+    .map((item) => `<span class="cow-item item-${item.id}">${item.emoji}</span>`)
+    .join('');
+  el.innerHTML = `<span class="cow">🐄${layers}</span>`;
+}
+
+function renderShop() {
+  renderCow($('shop-cow'));
+  renderCow($('alarm-cow'));
+  $('shop-items').innerHTML = SHOP_ITEMS.map((item) => {
+    const owned = game.ownedItems.includes(item.id);
+    const worn = game.equipped.includes(item.id);
+    const button = owned
+      ? `<button class="ghost" data-toggle="${item.id}">${worn ? 'Unequip' : 'Equip'}</button>`
+      : `<button class="primary" data-buy="${item.id}" ${game.points < item.cost ? 'disabled' : ''}>${item.cost} pts</button>`;
+    return `<div class="shop-item">
+      <span>${item.emoji} ${item.name}</span>
+      ${button}
+    </div>`;
+  }).join('');
+}
+
+function buyItem(id) {
+  const item = SHOP_ITEMS.find((x) => x.id === id);
+  if (!item || game.ownedItems.includes(id) || game.points < item.cost) return;
+  game.points -= item.cost;
+  game.ownedItems = [...game.ownedItems, id];
+  equipItem(id); // buying wears it right away; equipItem saves and re-renders
+}
+
+// One item per slot: equipping replaces whatever is already worn in that slot.
+function equipItem(id) {
+  const item = SHOP_ITEMS.find((x) => x.id === id);
+  if (!item || !game.ownedItems.includes(id)) return;
+  const sameSlot = (otherId) => SHOP_ITEMS.find((x) => x.id === otherId)?.slot === item.slot;
+  game.equipped = [...game.equipped.filter((o) => !sameSlot(o)), id];
+  saveGame();
+  renderHud();
+}
+
+function unequipItem(id) {
+  game.equipped = game.equipped.filter((o) => o !== id);
+  saveGame();
+  renderHud();
+}
+
+$('shop-items').addEventListener('click', (e) => {
+  const buy = e.target.closest('button[data-buy]');
+  if (buy) return buyItem(buy.dataset.buy);
+  const toggle = e.target.closest('button[data-toggle]');
+  if (toggle) {
+    const id = toggle.dataset.toggle;
+    if (game.equipped.includes(id)) unequipItem(id);
+    else equipItem(id);
+  }
+});
+
+// Shop window is hidden until the Shop button is clicked.
+const shopSection = $('shop'), shopBtn = $('shop-btn');
+function setShopOpen(open) {
+  shopSection.classList.toggle('hidden', !open);
+  shopBtn.setAttribute('aria-expanded', String(open));
+  shopBtn.textContent = open ? 'Close shop' : '🛒 Shop';
+}
+shopBtn.addEventListener('click', () => setShopOpen(shopSection.classList.contains('hidden')));
+$('shop-close').addEventListener('click', () => setShopOpen(false));
+
 function onAlarmDismissed() {
-  // TODO: update streak / lastWakeDate here
+  const today = todayKey();
+  if (game.lastWakeDate !== today) {
+    game.streak = game.lastWakeDate === yesterdayKey() ? game.streak + 1 : 1;
+    game.lastWakeDate = today;
+    saveGame();
+  }
+  renderHud();
 }
 
 // ---------- controls ----------
 armBtn.addEventListener('click', () => {
   ensureAudio(); // this click unlocks audio autoplay
+  primeMoo();    // new line
   if (state.armed) {
     state.armed = false;
     releaseWakeLock();
@@ -258,10 +387,10 @@ timeInput.addEventListener('change', () => {
 });
 
 function renderStatus() {
-  armBtn.textContent = state.armed ? 'Disarm' : 'Arm alarm';
+  armBtn.textContent = state.armed ? 'disarm' : 'arm alarm';
   statusEl.textContent = state.armed
-    ? `Armed for ${state.time}. Keep this tab open.`
-    : 'Alarm is off.';
+    ? `moothew will wake you up at  ${state.time}. keep this tab open!`
+    : 'alarm is off.';
 }
 
 // ---------- main loop ----------
@@ -281,6 +410,7 @@ function tick() {
   await loadQuestions();
   timeInput.value = state.time;
   renderStatus();
+  renderHud();
   if (state.armed) requestWakeLock();
   if (state.ringing) startRinging(); // resume after refresh mid-alarm
   tick();
