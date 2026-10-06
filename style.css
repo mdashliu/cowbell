@@ -187,7 +187,6 @@ button.primary:disabled { background: #bfd3eb; color: #fff; text-shadow: none; }
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
 }
 .inner-window .content { padding: 14px; }
-.shop-cow { font-size: 4.5rem; min-height: 1.5em; padding-top: 0.3em; text-align: center; margin-bottom: 10px; }
 .shop-items { display: flex; flex-direction: column; }
 .shop-item {
   display: flex;
@@ -199,14 +198,17 @@ button.primary:disabled { background: #bfd3eb; color: #fff; text-shadow: none; }
 .shop-item:last-child { border-bottom: none; }
 .shop-item button { padding: 3px 12px; }
 
-/* ---------- cow + equipped items ---------- */
-/* Offsets are in em relative to the cow's font size; tweak per emoji font. */
-.cow { position: relative; display: inline-block; line-height: 1; }
-.cow-item { position: absolute; font-size: 0.4em; line-height: 1; pointer-events: none; }
-.item-hat    { top: -0.2em;  left: 0.05em; }
-.item-shades { top: 0.2em;   left: 0.02em; }
-.item-flower { top: 0.02em;  left: 0.4em; }
-.item-bell   { top: 0.62em;  left: 0.1em; }
+/* ---------- cow + equipped accessories (images) ---------- */
+/* Accessories are stacked on top of the cow image. If every accessory PNG was exported at the
+   same canvas size as the cow, they line up automatically. If they're cropped to just the
+   accessory, position each one below (top/left/width as % of the cow). */
+.cow { position: relative; display: inline-block; line-height: 0; }
+.cow-img, .cow-item { image-rendering: pixelated; }
+.cow-img { display: block; width: var(--cow-w, 160px); height: auto; }
+.cow-item { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* cropped-accessory example:
+.item-hat { inset: auto; top: -8%; left: 6%; width: 40%; height: auto; } */
+.main-cow { --cow-w: 180px; margin: 0 auto 12px; }
 
 /* ---------- alarm overlay (dialog window) ---------- */
 .overlay {
@@ -221,7 +223,7 @@ button.primary:disabled { background: #bfd3eb; color: #fff; text-shadow: none; }
 }
 .dialog { width: min(94vw, 460px); }
 .dialog-body { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.cow-big { font-size: 6rem; line-height: 1; animation: shake 0.4s infinite alternate; }
+.cow-big { --cow-w: 200px; line-height: 1; animation: shake 0.4s infinite alternate; }
 @keyframes shake {
   from { transform: rotate(-8deg); }
   to   { transform: rotate(8deg); }
@@ -284,4 +286,19 @@ body { padding-bottom: 56px; } /* keep the window from hiding behind the bar */
   text-overflow: ellipsis;
   border: 2px solid;
   border-color: var(--lo) var(--hi) var(--hi) var(--lo);
+}
+
+.item-scarf {
+  transform: translate(4%, -6%) scale(0.6);
+  transform-origin: 10% 82%;
+}
+
+.item-bow {
+  transform: translate(4%, -6%) scale(0.5);
+  transform-origin: 40% 15%;
+}
+
+.item-hat {
+  transform: translate(4%, -6%) scale(0.5);
+  transform-origin: 12% 0%;
 }

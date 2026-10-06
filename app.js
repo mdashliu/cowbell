@@ -267,34 +267,37 @@ function onCorrect(q) {
 }
 
 // ---------- shop ----------
+// Image paths are relative to index.html. Rename these to match your files.
+const COW_IMG = 'images/cow.png';
+
+// Order matters: later items are drawn on top of earlier ones.
 const SHOP_ITEMS = [
-  { id: 'bell',   name: 'Bell',      emoji: '🔔', cost: 30, slot: 'neck' },
-  { id: 'flower', name: 'Flower',    emoji: '🌸', cost: 40, slot: 'head' },
-  { id: 'hat',    name: 'Top hat',   emoji: '🎩', cost: 50, slot: 'head' },
-  { id: 'shades', name: 'Shades',    emoji: '🕶️', cost: 60, slot: 'face' },
+  { id: 'scarf',   name: 'scarf',    img: 'images/scarf.png',   cost: 30, slot: 'neck' },
+  { id: 'bow', name: 'bow',  img: 'images/bow.png', cost: 40, slot: 'head' },
+  { id: 'hat',    name: 'hat', img: 'images/hat.png',    cost: 50, slot: 'head' },
 ];
 
-// Draws the cow plus every owned item as an absolutely positioned layer.
-// Offsets live in style.css (.item-<id>) so they're easy to tweak.
+// Draws the cow image with every equipped accessory stacked on top of it.
+// Sizing/offsets live in style.css (.cow-img, .cow-item, .item-<id>).
 function renderCow(el) {
   const layers = SHOP_ITEMS
     .filter((item) => game.equipped.includes(item.id))
-    .map((item) => `<span class="cow-item item-${item.id}">${item.emoji}</span>`)
+    .map((item) => `<img class="cow-item item-${item.id}" src="${item.img}" alt="${item.name}">`)
     .join('');
-  el.innerHTML = `<span class="cow">🐄${layers}</span>`;
+  el.innerHTML = `<span class="cow"><img class="cow-img" src="${COW_IMG}" alt="cow">${layers}</span>`;
 }
 
 function renderShop() {
-  renderCow($('shop-cow'));
-  renderCow($('alarm-cow'));
+  renderCow($('main-cow'));   // the cow under the clock
+  renderCow($('alarm-cow'));  // the cow in the wake-up dialog
   $('shop-items').innerHTML = SHOP_ITEMS.map((item) => {
     const owned = game.ownedItems.includes(item.id);
     const worn = game.equipped.includes(item.id);
     const button = owned
       ? `<button class="ghost" data-toggle="${item.id}">${worn ? 'Unequip' : 'Equip'}</button>`
-      : `<button class="primary" data-buy="${item.id}" ${game.points < item.cost ? 'disabled' : ''}>${item.cost} pts</button>`;
+      : `<button class="primary" data-buy="${item.id}" ${game.points < item.cost ? 'disabled' : ''}>${item.cost} coins</button>`;
     return `<div class="shop-item">
-      <span>${item.emoji} ${item.name}</span>
+      <span>${item.name}</span>
       ${button}
     </div>`;
   }).join('');
@@ -340,7 +343,7 @@ const shopSection = $('shop'), shopBtn = $('shop-btn');
 function setShopOpen(open) {
   shopSection.classList.toggle('hidden', !open);
   shopBtn.setAttribute('aria-expanded', String(open));
-  shopBtn.textContent = open ? 'Close shop' : '🛒 Shop';
+  shopBtn.textContent = open ? 'close shop' : 'shop';
 }
 shopBtn.addEventListener('click', () => setShopOpen(shopSection.classList.contains('hidden')));
 $('shop-close').addEventListener('click', () => setShopOpen(false));
